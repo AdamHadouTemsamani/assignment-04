@@ -10,10 +10,26 @@ public class WorkItemRepository : IWorkItemRepository
     }
 
     (Response Response, int ItemId) Create(WorkItemCreateDTO item){
-        throw new NotImplementedException() ;
+       
+       var Witem = new WorkItem{
+        Id = item.Id,
+        Title = item.Title,
+
+       }
+       Witem.State=State.New;
+       //created time
+       _context.Items.Add(Witem);
+       _context.SaveChanges();
+
+       return (Created,Witem.Id);
     }
+
     WorkItemDetailsDTO Find(int itemId){
-        throw new NotImplementedException() ;
+       var item = from c in _context.Items
+       where c.Id == itemId
+       select new WorkItemDetailsDTO(c.Id,c.Title, "",c.D);
+
+       return WorkItemDetailsDTO();
     }
     IReadOnlyCollection<WorkItemDTO> Read(){
         throw new NotImplementedException() ;
@@ -34,7 +50,25 @@ public class WorkItemRepository : IWorkItemRepository
         throw new NotImplementedException() ;
     }
     Response Delete(int itemId){
-        throw new NotImplementedException() ;
+        var entity = _context.Items.Find(itemId);
+
+        if (entity.State == State.New)
+        {
+        _context.Items.Remove(entity);
+        _context.SaveChanges();
+
+        return Deleted;
+        }else if(entity.State == State.Active){
+        entity.State = State.Removed;
+         _context.SaveChanges();
+         return Deleted;
+        }else if(entity.State == State.Resolved || entity.State == State.Removed || entity.State == State.Closed){
+         entity.State = State.Removed;
+         _context.SaveChanges();
+         return Conflict;
+        }
+
+        return NotFound;
     }
 
 }

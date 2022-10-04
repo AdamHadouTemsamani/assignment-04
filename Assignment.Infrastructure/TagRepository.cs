@@ -19,12 +19,12 @@ public class TagRepository : ITagRepository
        return (Created,tg.Id);
     }
 
-    public TagDTO? Find(int tagId){
+    public TagDTO Find(int tagId){
        var tg = from c in _context.Tags
        where c.Id == tagId
        select new TagDTO(c.Id,c.Name);
 
-       return tg.FirstOrDefault();
+       return tg.FirstOrDefault()!;
     }
 
     public IReadOnlyCollection<TagDTO> Read(){
