@@ -11,11 +11,7 @@ public class WorkItemRepository : IWorkItemRepository
 
     (Response Response, int ItemId) Create(WorkItemCreateDTO item){
        
-       var Witem = new WorkItem{
-        Id = item.Id,
-        Title = item.Title,
-
-       }
+       var Witem = new WorkItem(item.Title);
        Witem.State=State.New;
        //created time
        _context.Items.Add(Witem);
