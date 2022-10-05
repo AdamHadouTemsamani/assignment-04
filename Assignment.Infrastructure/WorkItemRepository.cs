@@ -9,43 +9,91 @@ public class WorkItemRepository : IWorkItemRepository
         _context = context;
     }
 
-    (Response Response, int ItemId) Create(WorkItemCreateDTO item){
+
+    public (Response Response, int ItemId) Create(WorkItemCreateDTO item){
        
-       var Witem = new WorkItem(item.Title);
-       Witem.State=State.New;
-       //created time
-       _context.Items.Add(Witem);
+ 
+        var WItem = new WorkItem(item.Title)
+        {
+            AssignedTo = _context.Users.Find(item.AssignedToId),
+            Description = item.Description,
+            Created = DateTime.Now,
+            State = State.New,
+            Tags = _context.Tags.Where(x => x.Name.Equals(item.Tags)).ToList(),
+            StateUpdated = DateTime.Now
+        };
+
+       _context.Items.Add(WItem);
        _context.SaveChanges();
 
-       return (Created,Witem.Id);
+       return (Created,WItem.Id);
     }
 
-    WorkItemDetailsDTO Find(int itemId){
-       var item = from c in _context.Items
+    public WorkItemDetailsDTO Find(int itemId){
+
+       var item1 = from c in _context.Items
        where c.Id == itemId
-       select new WorkItemDetailsDTO(c.Id,c.Title, "",c.D);
+       select new WorkItemDetailsDTO(c.Id,c.Title,c.Description,c.Created, c.AssignedTo.ToString(),c.Tags.Select(x=>x.Name).ToList(),c.State, c.StateUpdated);
 
-       return WorkItemDetailsDTO();
+       return item1.FirstOrDefault()!;
     }
-    IReadOnlyCollection<WorkItemDTO> Read(){
-        throw new NotImplementedException() ;
+    public IReadOnlyCollection<WorkItemDTO> Read(){
+        var Items = from i in _context.Items
+        select new WorkItemDTO(i.Id,i.Title, i.AssignedTo.Name, i.Tags.Select(x=>x.Name).ToList(), i.State);
+
+        return Items.ToList();
     }
-    IReadOnlyCollection<WorkItemDTO> ReadRemoved(){
-        throw new NotImplementedException() ;
+    /////
+    public IReadOnlyCollection<WorkItemDTO> ReadRemoved(){
+        var Items = from i in _context.Items
+        select new WorkItemDTO(i.Id,i.Title, i.AssignedTo.Name, i.Tags.Select(x=>x.Name).ToList(), State.Removed);
+
+        return Items.ToList();
     }
-    IReadOnlyCollection<WorkItemDTO> ReadByTag(string tag){
-        throw new NotImplementedException() ;
+    //Temp
+    public IReadOnlyCollection<WorkItemDTO> ReadByTag(string tag){
+        var Items = from i in _context.Items
+        select new WorkItemDTO(i.Id,i.Title, i.AssignedTo.Name, i.Tags.Where(i=>i.Equals(tag)).Select(x=>x.Name).ToList(), i.State);
+
+        return Items.ToList();
     }
-    IReadOnlyCollection<WorkItemDTO> ReadByUser(int userId){
-        throw new NotImplementedException() ;
+    //temp
+    public IReadOnlyCollection<WorkItemDTO> ReadByUser(int userId){
+        var Items = from i in _context.Items
+        select new WorkItemDTO(userId,i.Title, i.AssignedTo.Name, i.Tags.Select(x=>x.Name).ToList(), i.State);
+
+        return Items.ToList();
     }
-    IReadOnlyCollection<WorkItemDTO> ReadByState(State state){
-        throw new NotImplementedException() ;
+    //doubt this should work
+    public IReadOnlyCollection<WorkItemDTO> ReadByState(State state){
+        var Items = from i in _context.Items
+        select new WorkItemDTO(i.Id,i.Title, i.AssignedTo.Name, i.Tags.Select(x=>x.Name).ToList(), state);
+
+        return Items.ToList();
     }
-    Response Update(WorkItemUpdateDTO item){
-        throw new NotImplementedException() ;
+    public Response Update(WorkItemUpdateDTO item){
+
+        var selected = _context.Items.Find(item);
+
+        if(selected == null){
+            return NotFound;
+        }
+
+        selected.Title = item.Title;
+        selected.Id = item.Id;
+        selected.StateUpdated = DateTime.Now;
+        selected.State = item.State;
+        selected.Description = item.Description;
+        selected.AssignedToId = item.AssignedToId;
+        
+        _context.SaveChanges();
+
+
+        return Updated;
     }
-    Response Delete(int itemId){
+
+    public Response Delete(int itemId){
+
         var entity = _context.Items.Find(itemId);
 
         if (entity.State == State.New)

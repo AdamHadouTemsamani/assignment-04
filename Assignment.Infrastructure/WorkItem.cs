@@ -6,9 +6,15 @@ public class WorkItem
 
     public string Title { get; set; }
 
+    public string? Description { get; set; }
+
     public int? AssignedToId { get; set; }
 
     public User? AssignedTo { get; set; }
+
+    public DateTime Created {get; set;}
+
+    public DateTime StateUpdated {get; set;}
 
     public State State { get; set; }
 
