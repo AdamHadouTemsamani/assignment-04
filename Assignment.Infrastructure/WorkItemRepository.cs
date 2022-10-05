@@ -9,6 +9,7 @@ public class WorkItemRepository : IWorkItemRepository
         _context = context;
     }
 
+
     public (Response Response, int ItemId) Create(WorkItemCreateDTO item){
        
  
@@ -92,6 +93,7 @@ public class WorkItemRepository : IWorkItemRepository
     }
 
     public Response Delete(int itemId){
+
         var entity = _context.Items.Find(itemId);
 
         if (entity.State == State.New)

@@ -11,7 +11,7 @@ public class TagRepository : ITagRepository
 
     public (Response Response, int TagId) Create(TagCreateDTO tag)
     {   
-       
+
        var tg = new Tag(tag.Name);
        
        _context.Tags.Add(tg);
@@ -50,7 +50,9 @@ public class TagRepository : ITagRepository
         return Updated;
     }
 
+
     public Response Delete(int tagId, bool force){
+
         var entity = _context.Tags.Find(tagId);
 
         if (entity == null)
@@ -64,5 +66,6 @@ public class TagRepository : ITagRepository
         _context.SaveChanges();
         return Deleted;
         
+
     }
 }

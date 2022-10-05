@@ -13,6 +13,7 @@ public sealed class TagRepositoryTests : IDisposable
         _context = new KanbanContext(builder.Options);
         _context.Database.EnsureCreated();
 
+
         var tagD = new Tag("Dangerous"){ Id = 1, WorkItems = new List<WorkItem>{}};
         var tagB = new Tag("Boring"){ Id = 2, WorkItems = new List<WorkItem>{}};
         var ItemA = new WorkItem("Sand"){Id = 1, AssignedTo=null, State=State.New, Tags = new List<Tag>{tagB}};
@@ -23,6 +24,7 @@ public sealed class TagRepositoryTests : IDisposable
 
         _repository = new TagRepository(_context);
     }
+
 
     public void Dispose()
     {
@@ -41,6 +43,7 @@ public sealed class TagRepositoryTests : IDisposable
 
     [Fact]
     public void Create_New_Tag_Third_Tag_should_be_Cool()
+
     {   
         var tg = new TagCreateDTO("Cool");
         var expect = new TagDTO(3,"Cool");
@@ -51,6 +54,7 @@ public sealed class TagRepositoryTests : IDisposable
         _repository.Find(3).Should().BeEquivalentTo(expect);
         
     }
+
 
     [Fact]
     public void Delete_Tag_Not_in_use_Should_Delete()
@@ -90,4 +94,6 @@ public sealed class TagRepositoryTests : IDisposable
         
     }
 
-}
+
+
+

@@ -18,6 +18,7 @@ public class WorkItemRepositoryTests : IDisposable
         var item3 = new WorkItem("Money");
 
         _context.Items.AddRange(item1, item2, item3);
+
         _context.SaveChanges();
 
         _repository = new WorkItemRepository(_context);
