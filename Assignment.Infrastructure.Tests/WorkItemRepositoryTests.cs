@@ -13,10 +13,11 @@ public class WorkItemRepositoryTests : IDisposable
         _context = new KanbanContext(builder.Options);
         _context.Database.EnsureCreated();
 
-        var item1 = new WorkItem("Arson");
-        var item2 = new WorkItem("Tax evasion");
+        var item1 = new WorkItem("Flamethrower");
+        var item2 = new WorkItem("Gun");
+        var item3 = new WorkItem("Money");
 
-        _context.Items.AddRange(item1, item2);
+        _context.Items.AddRange(item1, item2, item3);
         _context.SaveChanges();
 
         _repository = new WorkItemRepository(_context);
