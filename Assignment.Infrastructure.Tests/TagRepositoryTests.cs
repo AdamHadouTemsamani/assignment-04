@@ -86,7 +86,7 @@ public sealed class TagRepositoryTests : IDisposable
     [Fact]
     public void Create_Duplicate_Tag_should_return_Conflict()
     {   
-        var tg = new TagCreateDTO("Boring");
+        var tg = new TagCreateDTO("Dangerous");
 
         var (status, created) = _repository.Create(tg);
         

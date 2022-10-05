@@ -8,19 +8,20 @@ public class WorkItemRepository : IWorkItemRepository
     {
         _context = context;
     }
-
+//Id = 1, AssignedTo = null, State = State.New, Tags = new List<Tag> { } 
 
     public (Response Response, int ItemId) Create(WorkItemCreateDTO item){
        
- 
         var WItem = new WorkItem(item.Title)
         {
+            Title=item.Title,
             AssignedTo = _context.Users.Find(item.AssignedToId),
             Description = item.Description,
-            Created = DateTime.Now,
+            Created =  DateTime.UtcNow,
             State = State.New,
-            Tags = _context.Tags.Where(x => x.Name.Equals(item.Tags)).ToList(),
-            StateUpdated = DateTime.Now
+           Tags = _context.Tags.Where(x => x.Name.Equals(item.Tags)).ToList(),
+            StateUpdated =  DateTime.UtcNow,
+           
         };
 
        _context.Items.Add(WItem);
@@ -33,61 +34,79 @@ public class WorkItemRepository : IWorkItemRepository
 
        var item1 = from c in _context.Items
        where c.Id == itemId
-       select new WorkItemDetailsDTO(c.Id,c.Title,c.Description,c.Created, c.AssignedTo.ToString(),c.Tags.Select(x=>x.Name).ToList(),c.State, c.StateUpdated);
+       select new WorkItemDetailsDTO(c.Id,c.Title,c.Description!,c.Created, c.AssignedTo!.Name.ToString()!,c.Tags.Select(x=>new string(x.Name)).ToList(),c.State, c.StateUpdated);
 
        return item1.FirstOrDefault()!;
     }
+
     public IReadOnlyCollection<WorkItemDTO> Read(){
         var Items = from i in _context.Items
-        select new WorkItemDTO(i.Id,i.Title, i.AssignedTo.Name, i.Tags.Select(x=>x.Name).ToList(), i.State);
+        select new WorkItemDTO(i.Id,i.Title, i.AssignedTo!.Name, i.Tags.Select(x=>x.Name).ToList(), i.State);
 
         return Items.ToList();
     }
     /////
     public IReadOnlyCollection<WorkItemDTO> ReadRemoved(){
         var Items = from i in _context.Items
-        select new WorkItemDTO(i.Id,i.Title, i.AssignedTo.Name, i.Tags.Select(x=>x.Name).ToList(), State.Removed);
+        select new WorkItemDTO(i.Id,i.Title, i.AssignedTo!.Name, i.Tags.Select(x=>x.Name).ToList(), State.Removed);
 
         return Items.ToList();
     }
     //Temp
     public IReadOnlyCollection<WorkItemDTO> ReadByTag(string tag){
         var Items = from i in _context.Items
-        select new WorkItemDTO(i.Id,i.Title, i.AssignedTo.Name, i.Tags.Where(i=>i.Equals(tag)).Select(x=>x.Name).ToList(), i.State);
+        select new WorkItemDTO(i.Id,i.Title, i.AssignedTo!.Name, i.Tags.Where(i=>i.Equals(tag)).Select(x=>x.Name).ToList(), i.State);
 
         return Items.ToList();
     }
     //temp
     public IReadOnlyCollection<WorkItemDTO> ReadByUser(int userId){
         var Items = from i in _context.Items
-        select new WorkItemDTO(userId,i.Title, i.AssignedTo.Name, i.Tags.Select(x=>x.Name).ToList(), i.State);
+        select new WorkItemDTO(userId,i.Title, i.AssignedTo!.Name, i.Tags.Select(x=>x.Name).ToList(), i.State);
 
         return Items.ToList();
     }
     //doubt this should work
     public IReadOnlyCollection<WorkItemDTO> ReadByState(State state){
         var Items = from i in _context.Items
-        select new WorkItemDTO(i.Id,i.Title, i.AssignedTo.Name, i.Tags.Select(x=>x.Name).ToList(), state);
+        select new WorkItemDTO(i.Id,i.Title, i.AssignedTo!.Name, i.Tags.Select(x=>x.Name).ToList(), state);
 
         return Items.ToList();
     }
     public Response Update(WorkItemUpdateDTO item){
 
-        var selected = _context.Items.Find(item);
+        var selected = _context.Items.Find(item.Id);
 
         if(selected == null){
             return NotFound;
+        } else if (_context.Items.FirstOrDefault(x => x.Id != selected.Id && x.Title == selected.Title) != null)
+        {
+            return Conflict;
         }
 
         selected.Title = item.Title;
         selected.Id = item.Id;
-        selected.StateUpdated = DateTime.Now;
+        selected.StateUpdated =  DateTime.UtcNow;
         selected.State = item.State;
         selected.Description = item.Description;
-        selected.AssignedToId = item.AssignedToId;
-        
-        _context.SaveChanges();
+        selected.AssignedTo = _context.Users.Find(item.AssignedToId);
+        //selected.Tags = _context.Tags.Where(x=>x.Name.Equals(item.Tags)).Select(y=>y).ToList();;
+            var tagsList = new List<Tag>();
+            foreach (var s in item.Tags)
+            {
+                var tagsQuery = _context.Tags.Where(t => t.Name == s).Select(t => t);
+                foreach (var t in tagsQuery)
+                {
+                    tagsList.Add(t);
+                }
+            }
+            selected.Tags = tagsList;
 
+            if (selected.AssignedTo == null)
+            {
+                return Response.BadRequest;
+            }
+        _context.SaveChanges();
 
         return Updated;
     }
@@ -96,7 +115,7 @@ public class WorkItemRepository : IWorkItemRepository
 
         var entity = _context.Items.Find(itemId);
 
-        if (entity.State == State.New)
+        if (entity!.State == State.New)
         {
         _context.Items.Remove(entity);
         _context.SaveChanges();
@@ -105,10 +124,8 @@ public class WorkItemRepository : IWorkItemRepository
         }else if(entity.State == State.Active){
         entity.State = State.Removed;
          _context.SaveChanges();
-         return Deleted;
+         return Updated;
         }else if(entity.State == State.Resolved || entity.State == State.Removed || entity.State == State.Closed){
-         entity.State = State.Removed;
-         _context.SaveChanges();
          return Conflict;
         }
 

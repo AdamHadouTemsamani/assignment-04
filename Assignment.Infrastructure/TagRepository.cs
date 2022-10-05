@@ -11,13 +11,17 @@ public class TagRepository : ITagRepository
 
     public (Response Response, int TagId) Create(TagCreateDTO tag)
     {   
-
+       var search = _context.Tags.Where(x=>x.Name.Equals(tag.Name)).FirstOrDefault();
        var tg = new Tag(tag.Name);
-       
-       _context.Tags.Add(tg);
+
+       if(search is null){
+        _context.Tags.Add(tg);
        _context.SaveChanges();
 
        return (Created,tg.Id);
+       }
+       return (Conflict,tg.Id);
+       
     }
 
     public TagDTO Find(int tagId){

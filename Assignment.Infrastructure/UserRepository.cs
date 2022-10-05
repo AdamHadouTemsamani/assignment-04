@@ -1,6 +1,6 @@
 namespace Assignment.Infrastructure;
 
-public class UserRepository
+public class UserRepository : IUserRepository
 {   
     private readonly KanbanContext _context;
 
@@ -9,46 +9,48 @@ public class UserRepository
         _context = context;
     }
 
-    (Response Response, int UserId) Create(UserCreateDTO user){
+    public (Response Response, int UserId) Create(UserCreateDTO user){
        var u = new User(user.Name,user.Email);
-       if(Find(u.Id).Email != user.Email){
+       var search = _context.Users.Where(x=>x.Email.Equals(u.Email)).FirstOrDefault();
+       if(search is not null){
+         return (Conflict,u.Id);
+       }
        _context.Users.Add(u);
        _context.SaveChanges();
 
        return (Created,u.Id);
-       }
-       return (Conflict,u.Id);
     }
 
-    UserDTO Find(int userId){
+    public UserDTO Find(int userId){
        var u = from c in _context.Users
        where c.Id == userId
        select new UserDTO(c.Id,c.Name,c.Email);
 
        return u.FirstOrDefault()!;
     }
-    IReadOnlyCollection<UserDTO> Read(){
+    public IReadOnlyCollection<UserDTO> Read(){
         var users = from c in _context.Users
         select new UserDTO(c.Id,c.Name,c.Email);
 
         return users.ToList();
     }
-    Response Update(UserUpdateDTO user){
+    public Response Update(UserUpdateDTO user){
         //notImplemented
     return Updated;
     }
 
-    Response Delete(int userId, bool force = false){
-        var entity = _context.Tags.Find(userId);
+    public Response Delete(int userId, bool force = false){
+        var entity = _context.Users.Find(userId);
 
         if (entity == null)
         {
-            return NotFound;
+        return NotFound;
         }
-
-        _context.Tags.Remove(entity);
+        else if(!force && entity.Items.Any()){
+        return Conflict;
+        }
+        _context.Users.Remove(entity);
         _context.SaveChanges();
-
         return Deleted;
     }
  }
