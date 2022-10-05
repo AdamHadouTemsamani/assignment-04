@@ -30,17 +30,7 @@ public class WorkItemRepositoryTests : IDisposable
     [Fact]
     public void Create_New_Item()
     {   
-        var tags = new List<string>();
-        tags.Add("Cool");
-        
-       
-        var item = new WorkItemCreateDTO("Arson",null,null, tags);
-        var expect = new WorkItemDetailsDTO(1,"Arson",null,DateTime.Today,"Joe Mama",tags,State.Active, DateTime.Now);
 
-        var (status, created) = _repository.Create(item);
-        
-        status.Should().Be(Created);
-        _repository.Find(3).Should().BeEquivalentTo(expect);
         
     }
 
