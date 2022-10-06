@@ -19,7 +19,7 @@ public class WorkItemRepository : IWorkItemRepository
             Description = item.Description,
             Created =  DateTime.UtcNow,
             State = State.New,
-           Tags = _context.Tags.Where(x => x.Name.Equals(item.Tags)).ToList(),
+            Tags = _context.Tags.Where(x => x.Name.Equals(item.Tags)).ToList(),
             StateUpdated =  DateTime.UtcNow,
            
         };
@@ -34,9 +34,9 @@ public class WorkItemRepository : IWorkItemRepository
 
        var item1 = from c in _context.Items
        where c.Id == itemId
-       select new WorkItemDetailsDTO(c.Id,c.Title,c.Description!,c.Created, c.AssignedTo!.Name.ToString()!,c.Tags.Select(x=>new string(x.Name)).ToList(),c.State, c.StateUpdated);
-
-       return item1.FirstOrDefault()!;
+       select new WorkItemDetailsDTO(c.Id,c.Title,c.Description!,c.Created, c.AssignedTo!.Name.ToString()!,c.Tags.Select(x=>x.Name.ToString()).ToList(),c.State, c.StateUpdated);
+       if (item1 is null) return null;
+       return item1.FirstOrDefault();
     }
 
     public IReadOnlyCollection<WorkItemDTO> Read(){
@@ -83,29 +83,35 @@ public class WorkItemRepository : IWorkItemRepository
         {
             return Conflict;
         }
+        
+        if (selected.State != item.State)
+        {
+            selected.StateUpdated = DateTime.UtcNow;
+            selected.State = item.State;
+        }
 
+        var tagList = new List<Tag>();
+        foreach (var s in item.Tags)
+        {
+            var tagsQuery = _context.Tags.Where(t => t.Name == s).Select(t => t);
+            foreach (var t in tagsQuery)
+            {
+                tagList.Add(t);
+            }
+        }
+
+        selected.Tags=tagList;
         selected.Title = item.Title;
         selected.Id = item.Id;
-        selected.StateUpdated =  DateTime.UtcNow;
-        selected.State = item.State;
         selected.Description = item.Description;
         selected.AssignedTo = _context.Users.Find(item.AssignedToId);
-        //selected.Tags = _context.Tags.Where(x=>x.Name.Equals(item.Tags)).Select(y=>y).ToList();;
-            var tagsList = new List<Tag>();
-            foreach (var s in item.Tags)
-            {
-                var tagsQuery = _context.Tags.Where(t => t.Name == s).Select(t => t);
-                foreach (var t in tagsQuery)
-                {
-                    tagsList.Add(t);
-                }
-            }
-            selected.Tags = tagsList;
+        
+        
 
-            if (selected.AssignedTo == null)
-            {
-                return Response.BadRequest;
-            }
+    if (selected.AssignedTo is null)
+    {
+        return BadRequest;
+    }
         _context.SaveChanges();
 
         return Updated;

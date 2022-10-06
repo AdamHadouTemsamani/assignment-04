@@ -35,8 +35,18 @@ public class UserRepository : IUserRepository
         return users.ToList();
     }
     public Response Update(UserUpdateDTO user){
-        //notImplemented
-    return Updated;
+        var entity = _context.Users.Find(user.Id);
+
+        if (entity == null)
+        {
+            return NotFound;
+        }
+
+        entity.Id = user.Id;
+        entity.Name = user.Name;
+        
+
+        return Updated;
     }
 
     public Response Delete(int userId, bool force = false){

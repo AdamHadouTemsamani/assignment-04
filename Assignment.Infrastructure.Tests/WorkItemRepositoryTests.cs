@@ -13,18 +13,20 @@ public class WorkItemRepositoryTests : IDisposable
         _context = new KanbanContext(builder.Options);
         _context.Database.EnsureCreated();
 
-        var item1 = new WorkItem("Flamethrower"){ Id = 1, AssignedTo = null, State = State.New, Tags = new List<Tag> { } };
+        var u1 = new User("Obama","ObamaPrism@gmail.com"){Id=1,Items= new HashSet<WorkItem>{}};
+
+        var tagD = new Tag("Dangerous"){ Id = 1, WorkItems = new List<WorkItem>{}};
+        var tagB = new Tag("Boring"){ Id = 2, WorkItems = new List<WorkItem>{}};
+
+        var item1 = new WorkItem("Flamethrower"){ Id = 1, AssignedTo = null, State = State.New, Tags = new List<Tag> {tagD} };
         var item2 = new WorkItem("Gun"){ Id = 2, AssignedTo = null, State = State.Active, Tags = new List<Tag> { } };
         var item3 = new WorkItem("Money"){ Id = 3, AssignedTo = null, State = State.Removed, Tags = new List<Tag> { } };
         var item4 = new WorkItem("Drugs"){ Id = 4, AssignedTo = null, State = State.Resolved, Tags = new List<Tag> { } };
         var item5 = new WorkItem("Drip"){ Id = 5, AssignedTo = null, State = State.Closed, Tags = new List<Tag> { } };
         
         _context.Items.AddRange(item1, item2, item3, item4, item5);
-
-        var tagD = new Tag("Dangerous"){ Id = 1, WorkItems = new List<WorkItem>{}};
-        var tagB = new Tag("Boring"){ Id = 2, WorkItems = new List<WorkItem>{}};
-
-         _context.Tags.AddRange(tagD,tagB);
+        _context.Users.AddRange(u1);
+        _context.Tags.AddRange(tagD,tagB);
 
         _context.SaveChanges();
 
@@ -82,17 +84,68 @@ public class WorkItemRepositoryTests : IDisposable
 
         _context.Items.Find(6)!.State.Should().Be(State.New);
         var expectedTime = DateTime.UtcNow;
-        _context.Items.Find(6)!.Created.Should().BeCloseTo(expectedTime, precision: TimeSpan.FromSeconds(5));
-        _context.Items.Find(6)!.StateUpdated.Should().BeCloseTo(expectedTime, precision: TimeSpan.FromSeconds(5));
+        _context.Items.Find(6)!.Created.Should().BeCloseTo(expectedTime, precision: TimeSpan.FromSeconds(1));
+        _context.Items.Find(6)!.StateUpdated.Should().BeCloseTo(expectedTime, precision: TimeSpan.FromSeconds(1));
     }
 
     [Fact]
-    public void Update_item_updates_tags()
+    public void Update_updates()
     {   
+  
+        var updated = _repository.Update(new WorkItemUpdateDTO(1, "Bank Robbery", 1, "Do it", new List<string>(), State.New));
+        
+        updated.Should().Be(Response.Updated);
+    }
     
-        _repository.Update(new WorkItemUpdateDTO(1, "Laundry", 1, "Do the laundry", new List<string>(){"Kekw"}, State.Resolved));
-       
-        _repository.Find(1).Tags.Should().BeEquivalentTo(new List<string>(){"Kekw"});
+    
+    [Fact]
+    public void Update_State_updates_State_and_StateTime()
+    {   
+  
+        var updated = _repository.Update(new WorkItemUpdateDTO(1, "Meth cooking", 1, "Do it", new List<string>(), State.Resolved));
+        
+        updated.Should().Be(Response.Updated);
+        
+        _context.Items.Find(1).State.Should().Be(State.Resolved);
+        _context.Items.Find(1).StateUpdated.Should().BeAfter(_context.Items.Find(1).Created);
+        
+    }
+
+    [Fact]
+    public void Update_tags_updates_tags_from_one_tag_to_no_tags()
+    {   
+  
+        var updated = _repository.Update(new WorkItemUpdateDTO(1, "Meth cooking", 1, "Do it", new List<string>(), State.Resolved));
+        
+        updated.Should().Be(Response.Updated);
+        
+        _context.Items.Find(1).Tags.Should().BeEquivalentTo(new List<string>());
+        
+        
+    }
+    
+       [Fact]
+    public void Update_tags_updates_tags_more_tags()
+    {   
+  
+        var updated = _repository.Update(new WorkItemUpdateDTO(1, "Meth cooking", 1, "Do it", new List<string>(){"Dangerous","Boring"}, State.Resolved));
+        
+        updated.Should().Be(Response.Updated);
+        
+        _context.Items.Find(1).Tags.Select(x=>x.Name).Should().BeEquivalentTo(new List<String>(){"Dangerous","Boring"});
+        
+    }
+    
+
+    [Fact]
+    public void Assigning_nonexisting_user_returns_bad_request()
+    {   
+  
+        var Response = _repository.Update(new WorkItemUpdateDTO(1, "Cooking", 2, "dew it", new List<string>(){"Dangerous"}, State.Resolved));
+        
+        Response.Should().Be(Response.BadRequest);
+
+
     }
 
 
